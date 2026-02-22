@@ -1,0 +1,152 @@
+ <!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purevibra - Mastery App</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <style>
+        :root { --purple: #6c5ce7; --yellow: #f1c40f; --green: #2ecc71; --dark: #2d3436; }
+        body { font-family: 'Poppins', sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
+        
+        /* Login Screen */
+        #login-page { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--dark); color: white; }
+        input { padding: 12px; margin: 10px; width: 80%; border-radius: 8px; border: none; }
+        
+        /* Home Screen */
+        .header { background: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 20px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .day-badge { background: var(--purple); color: white; padding: 10px 20px; border-radius: 50%; font-weight: bold; font-size: 20px; }
+        .day-badge.complete { background: var(--green); }
+
+        /* Grid Section */
+        .section-title { margin: 20px; font-weight: bold; color: var(--dark); }
+        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
+        .item-box { background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .item-box img { width: 40px; margin-bottom: 5px; }
+        .task-purple { background: var(--purple); color: white; }
+        .task-yellow { background: var(--yellow); color: black !important; }
+
+        /* Swipe Card Section */
+        .swiper { width: 90%; height: 180px; margin-top: 20px; border-radius: 20px; }
+        .swiper-slide { background: var(--purple); color: white; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 18px; padding: 20px; border-radius: 20px; }
+        
+        #home-page { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="login-page">
+        <h2 style="color: var(--purple)">Purevibra</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleLogin()" style="background: var(--purple); color: white; padding: 12px 40px; border: none; border-radius: 25px; margin-top: 10px;">Login</button>
+    </div>
+
+    <div id="home-page">
+        <div class="header">
+            <div>
+                <p style="margin:0; color: #888;">नमस्ते!</p>
+                <h3 id="user-display" style="margin:0;">Nandesh SWE</h3>
+            </div>
+            <div id="day-header" class="day-badge">10</div>
+        </div>
+
+        <p class="section-title">Learn Section</p>
+        <div class="grid-container">
+            <div class="item-box" onclick="goToLearn('affirmation')">
+                <img src="https://cdn-icons-png.flaticon.com/512/3591/3591147.png">
+                <p>Affirmation</p>
+            </div>
+            <div class="item-box" onclick="goToLearn('meditation')">
+                <img src="https://cdn-icons-png.flaticon.com/512/2910/2910795.png">
+                <p>Meditation</p>
+            </div>
+        </div>
+
+        <p class="section-title">Daily Task</p>
+        <div class="grid-container">
+            <div id="main-task" class="item-box task-purple" onclick="completeTask()">
+                <p id="task-text">Touch to Complete Today's Task</p>
+            </div>
+        </div>
+
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper" id="sheet-cards">
+                </div>
+            <div class="swiper-pagination"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        // Google Apps Script URL (Jo aapne pehle banaya)
+        const SCRIPT_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL";
+
+        let userData = { name: "", day: 1 };
+
+        async function handleLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            // Simple Google Sheet Auth Call
+            const response = await fetch(`${SCRIPT_URL}?username=${user}&password=${pass}`);
+            const result = await response.json();
+
+            if(result.status === "success") {
+                userData.name = user;
+                userData.day = result.dayCount;
+                startApp();
+            } else {
+                alert("गलत जानकारी!");
+            }
+        }
+
+        function startApp() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('home-page').style.display = 'block';
+            document.getElementById('user-display').innerText = userData.name;
+            document.getElementById('day-header').innerText = userData.day;
+            loadSheetData();
+        }
+
+        async function loadSheetData() {
+            // Google Sheet CSV URL (Affirmations ke liye)
+            const csvUrl = "YOUR_GOOGLE_SHEET_CSV_URL";
+            const res = await fetch(csvUrl);
+            const text = await res.text();
+            const rows = text.split('\n').slice(1);
+            
+            const container = document.getElementById('sheet-cards');
+            rows.forEach(r => {
+                const col = r.split(',');
+                if(col[1]) {
+                    container.innerHTML += `<div class="swiper-slide">${col[1]}</div>`;
+                }
+            });
+
+            new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", dynamicBullets: true } });
+        }
+
+        function completeTask() {
+            const taskBox = document.getElementById('main-task');
+            const dayBadge = document.getElementById('day-header');
+            
+            // Purple to Yellow change
+            taskBox.classList.remove('task-purple');
+            taskBox.classList.add('task-yellow');
+            document.getElementById('task-text').innerText = "Task Done! 🎉";
+            
+            // Header Green change
+            dayBadge.classList.add('complete');
+
+            // Sheet me update bhejne ka logic yahan aayega
+            console.log("Task marked as done in database");
+        }
+
+        function goToLearn(topic) {
+            alert(topic + " लर्निंग पेज पर जा रहे हैं...");
+            // window.location.href = `learning.html?topic=${topic}`;
+        }
+    </script>
+</body>
+</html>
